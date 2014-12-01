@@ -1,0 +1,100 @@
+GNUPFA is an experimental Python-implementation of the PFA
+algorithm as described in http://arxiv.org/abs/1311.2503.
+PFA is implemented as an MDP-node (http://mdp-toolkit.sourceforge.net).
+When this project reaches sufficient stability, an integration
+into MDP is planned.
+
+
+Files
+=====
+
+PFANodeMDPRefImp.py
+-------------------
+
+This is a naive one-to-one implementation of the PFA algorithm.
+It caches all supplied data into memory and has real support
+for chunking (as the intention of chunking is to read only a
+small subset of the data to memory, process it, free memory,
+process the next subset and so on).
+Further it must process the data several times; one time for
+each work step.
+Its advantage is that it is an easy to read implementation and
+is almost certainly bug free. So it can serve as a controlpoint
+for more advanced implementations.
+
+
+PFANodeMDP.py
+-------------
+
+Contains a smarter PFA implementation that supports real chunking.
+It only saves the mean, second moment matrix and several auto
+correlation matrices. Each chunk is just used to update these,
+eleminating any need for keeping data in memory.
+In contrast to PFANodeMDPRefImp, this implementation is rather
+complicated as the used equations are largely expanded in order
+to perform PFA just on top of auto correlation matrices.
+However, its results were compared to those of the reference
+implementation for various test data and the dicrepancy is on
+floating point numerical level.
+
+The Layer-aware node uses MergeLayer, an experimental notion to
+perform clone layer functionality in a more precise way. This is
+only relevant if one applies PFA hirarchically (c.f. mdp.hinet).
+
+
+PFACoreUtil.py
+--------------
+
+Contains various utility functions, on which PFANodeMDPRefImp and
+PFANodeMDP are built on. Additionally features some methods to
+evaluate the prediction error of extracted components empirically on
+given data. Currently it contains a lot of debugging outputs and
+requires clean-up.
+
+
+MergeLayer.py
+-------------
+
+Introduces an MDP-Layer with an additional merging-phase that merges all
+nodes in the layer after training. Merging is done by a given merger,
+which is itself a node. After merging, the merger will be used for
+execution in a CloneLayer-like fashion.
+
+The idea behind MergeLayer is a hybrid of ordinary layer and CloneLayer.
+The goal in this design is to use separate nodes in the train-phase,
+while using only a single node for execution. The difference to CloneLayer
+is that in MergeLayer, a different algorithm can be used for combining
+horizontally parallel data chunks than for combining time-sequent data
+chunks. The latter ones are combined by the nodes in the usual train-phase.
+In Contrast to CloneLayer, MergeLayer allows to control how horizontal merging
+of the data works. While CloneLayer would push this data into the very same
+train method like the time-sequent chunks, MergeLayer uses a merger to combine
+horizontal data.
+
+Note that this implementation is highly experimental.
+
+
+cache_node.py
+-------------
+
+Introduces caching functionality for MDP flows. Each flow step is saved to disc
+after it has been trained. This way, early nodes in the flow don't need to process
+the data repeatedly.
+And additional feature is that data can be re-ordered after caching. Most MDP nodes
+are agnostic to the order of their data anyway, but in layer-case, the order can matter,
+if image data from parallel areas is provided sequentially to the node (clone layer).
+MergeLayer can solve this, but a reordering cache can solve it too with even lower
+memory consumption, as it does not need to have parallel working memory for all areas
+in the layer. Note that memory consumption is crucial for potential GPU-based
+PFA-implementations.
+
+This implementation is highly experimental.
+
+
+
+License
+=======
+
+Until it gets integrated into MDP, GNUPFA will be released under GPL, v.3.
+See the file "LICENSE" for a copy of this GPL version.
+

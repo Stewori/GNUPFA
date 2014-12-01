@@ -12,7 +12,7 @@ PFANodeMDPRefImp.py
 -------------------
 
 This is a naive one-to-one implementation of the PFA algorithm.
-It caches all supplied data into memory and has real support
+It caches all supplied data into memory and has *no* real support
 for chunking (as the intention of chunking is to read only a
 small subset of the data to memory, process it, free memory,
 process the next subset and so on).
